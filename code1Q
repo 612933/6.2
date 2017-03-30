@@ -1,0 +1,148 @@
+DRIVER
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+public class drv {
+
+	public static void main(String[] args) throws Exception {
+		Configuration conf = new Configuration();
+		
+		Job job = new Job(conf,"5");
+		job.setJarByClass(drv.class);
+		
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(TextOutputFormat.class);
+		
+		Path out = new Path(args[1]);
+		FileInputFormat.addInputPath(job,new Path(args[0]));
+		FileOutputFormat.setOutputPath(job,out);
+		out.getFileSystem(conf).delete(out,true);
+		
+		
+		job.setOutputKeyClass(wx.class);
+		job.setOutputValueClass(NullWritable.class);
+		
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(IntWritable.class);
+		
+		job.setMapperClass(mpr.class);
+		job.setReducerClass(rcdr.class);
+		//job.setCombinerClass(rcdr.class);
+		//job.setPartitionerClass(prtr.class);
+		//job.setNumReduceTasks(3);
+		job.waitForCompletion(true);
+		
+		   
+	}
+
+}
+
+
+
+MAPPER
+
+
+ import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.*;
+
+public class mpr extends Mapper<LongWritable, Text,Text,IntWritable>{
+Text ok=new Text();
+IntWritable ov=new IntWritable();
+public void map(LongWritable key, Text value, Context context)
+ throws IOException, InterruptedException{
+	
+		String[] arr = value.toString().split("\t");
+		  if(arr[2].equalsIgnoreCase("MIA")||arr[2].equalsIgnoreCase("MCO"))
+		  { ok.set("no of passengers travelled to MIA or mco");
+			ov.set(1);
+			context.write(ok,ov);
+		  }
+		
+	}
+
+}
+
+
+
+REDUCER
+
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Reducer.Context;
+
+public class rcdr extends Reducer<Text,IntWritable,wx,NullWritable> {
+     NullWritable ov ;
+     wx x = new wx();
+public void reduce(Text key , Iterable<IntWritable> values, Context context) throws IOException,InterruptedException	
+	{   
+		int	sum=0;
+		for(IntWritable a :values)
+		{
+			sum+=a.get();
+		}
+		x.set(key.toString(),sum);
+		
+		context.write(x,ov);
+		
+	}
+}
+
+
+
+COMPOSITE KEY
+
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.EOFException;
+import java.io.IOException;
+
+import org.apache.hadoop.io.WritableComparable;
+
+public class wx implements WritableComparable<wx>{
+    int m=0;
+    private String no;
+    private int n;
+   
+    public void set(String a,int b){
+        no=a;
+        n=b;
+    }
+    public void readFields(DataInput in) throws IOException,EOFException{
+        no=in.readUTF();
+        n=in.readInt();
+    }
+    public void write(DataOutput out)throws IOException,EOFException{
+        out.writeUTF(no);
+        out.write(n);   
+    }
+    public String toString(){
+        return (no+","+n).toString();
+    }
+    public int hashcode(){
+        
+		return no.hashCode();
+    }
+
+@Override
+public int compareTo(wx o) {
+	// TODO Auto-generated method stub
+	return 0;
+}
+}
+
