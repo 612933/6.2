@@ -62,7 +62,7 @@ public void map(LongWritable key, Text value, Context context)
  throws IOException, InterruptedException{
 	
 		String[] arr = value.toString().split("\t");
-		  if(arr[2].equalsIgnoreCase("MIA")||arr[2].equalsIgnoreCase("HOU"))
+		  if(arr[1].equalsIgnoreCase("MIA")||arr[1].equalsIgnoreCase("HOU"))
 		  { ok.set("no of passengers travelled from MIA or HOU");
 			ov.set(1);
 			context.write(ok,ov);
